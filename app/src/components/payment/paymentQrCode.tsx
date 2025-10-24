@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, Copy, Download, RefreshCw } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import QRCode from "qrcode"
+import { createQR} from "@solana/pay"
 
 interface PaymentQRCodeProps {
   recipient: string
@@ -20,8 +19,12 @@ export function PaymentQRCode({ recipient, amount, label, message, reference, on
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [solanaPayUrl, setSolanaPayUrl] = useState("")
   const [copied, setCopied] = useState(false)
-  const { toast } = useToast()
-
+  // const { toast } = useToast()
+  console.log("mounted")
+  const qrcode2 = createQR("solana:https://7d0338b412f4.ngrok-free.app/api/create-transfer")
+  // log(qrcode)
+  console.log(qrcode2)
+  
   useEffect(() => {
     // Generate Solana Pay URL
     const params = new URLSearchParams()
@@ -33,41 +36,20 @@ export function PaymentQRCode({ recipient, amount, label, message, reference, on
     const url = `solana:${recipient}?${params.toString()}`
     setSolanaPayUrl(url)
 
+    const qrcode2 = createQR("solana:https://7d0338b412f4.ngrok-free.app/api/create-transfer")
+    // log(qrcode)
+    console.log(qrcode2)
     // Generate QR Code
-    if (canvasRef.current) {
-      QRCode.toCanvas(
-        canvasRef.current,
-        url,
-        {
-          width: 300,
-          margin: 2,
-          color: {
-            dark: "#000000",
-            light: "#FFFFFF",
-          },
-        },
-        (error) => {
-          if (error) console.error(error)
-        },
-      )
-    }
   }, [recipient, amount, label, message, reference])
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(solanaPayUrl)
       setCopied(true)
-      toast({
-        title: "Copied!",
-        description: "Payment URL copied to clipboard",
-      })
+ 
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
-      toast({
-        title: "Failed to copy",
-        description: "Please try again",
-        variant: "destructive",
-      })
+      console.log(error)
     }
   }
 
@@ -78,10 +60,7 @@ export function PaymentQRCode({ recipient, amount, label, message, reference, on
       link.download = `solpay-qr-${reference || Date.now()}.png`
       link.href = url
       link.click()
-      toast({
-        title: "Downloaded!",
-        description: "QR code saved to your device",
-      })
+ 
     }
   }
 

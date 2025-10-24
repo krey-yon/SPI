@@ -3,7 +3,7 @@
     "updatePrimeUsersPDA": "update the merkle root with new leafs",
     "Create User Prime membership ledger": "like ata in spl token, stores cashback earned total transactions current spi token amount",
     "Create a mint util funtion": "mint spi token to payer",
-    "burn spi token util function": "burn spi token after consumptions",
+    "burn spi token program function": "burn spi token after consumptions",
     "create transaction pda": "try diff payment amount for prime and non prime",
     "notes":{
         "one": "i am saving the users pubkey in db and there merkle tree root onchain in pda",

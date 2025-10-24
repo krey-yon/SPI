@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { WalletContextProvider } from "@/utils/walletProvider";
- import { ToastContainer } from 'react-toastify';
+import { ToastContainer } from "react-toastify";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,7 +26,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <WalletContextProvider>{children}</WalletContextProvider>
-        <ToastContainer/>
+        <ToastContainer />
       </body>
     </html>
   );

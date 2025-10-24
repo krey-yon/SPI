@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,9 @@ import {
   Check,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import { createQR, findReference } from "@solana/pay";
+import { Connection, PublicKey } from "@solana/web3.js";
+import { mintSPI } from "@/actions/reward";
 
 type PaymentStatus =
   | "pending"
@@ -23,22 +26,27 @@ type PaymentStatus =
   | "expired"
   | "failed";
 
+const connection = new Connection("https://solana-devnet.g.alchemy.com/v2/s-2PSwB8NlPzdjTKg1a1a", "confirmed");
+
 export default function PaymentPage() {
   const searchParams = useSearchParams();
 
   // Payment details from URL params
   const recipient = searchParams.get("recipient") || "merchant.sol";
-  const amount = searchParams.get("amount") || "0.5";
+  // const amount = searchParams.get("amount") || "0.5";
+  const amount = 0.5;
   const label = searchParams.get("label") || "Merchant Store";
   const message = searchParams.get("message") || "Payment for order #12345";
 
   const [status, setStatus] = useState<PaymentStatus>("pending");
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
-  const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [reference, setReference] = useState<string>("");
   const [pdaAddress, setPdaAddress] = useState<string>("");
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const qrContainerRef = useRef<HTMLDivElement>(null);
+
+  const params = useParams();
+  const referencemain = params.url?.toString();
 
   // Generate reference and PDA on mount
   useEffect(() => {
@@ -64,34 +72,119 @@ export default function PaymentPage() {
   }, []);
 
   // Generate QR code
+  // useEffect(() => {
+  //   if (!reference) return;
+
+  //   const generateQR = () => {
+  //     const url = "solana:https://7d0338b412f4.ngrok-free.app/api/create-transfer"
+  //     const qrCodeFromSpay = createQR(url)
+  //     console.log(qrCodeFromSpay)
+  //     // qrContainerRef.current(qrCodeFromSpay)
+  //     qrCodeFromSpay.append(qrContainerRef.current)
+  //   }
+
+  //   generateQR();
+  // }, [reference, recipient, amount, label, message, toast]);
+
+  // Check for payment with proper error handling
+  const checkForPayment = async () => {
+    if (!referencemain) {
+      console.log("No reference available yet");
+      return;
+    }
+
+    try {
+      setStatus("processing");
+      const referencePubKey = new PublicKey(referencemain);
+
+      console.log(
+        "Checking for payment with reference:",
+        referencePubKey.toString()
+      );
+
+      // findReference throws an error if no transaction is found
+      const signatureInfo = await findReference(connection, referencePubKey, {
+        finality: "confirmed",
+      }).then((ctx) => {
+        console.log("Transaction found issuing rewards spi");
+        console.log(ctx.signature)
+        console.log(amount)
+        // mintSPI(amount, referencemain)
+      });
+
+      console.log("Transaction found:", signatureInfo);
+      toast(signatureInfo!)
+
+      // Optional: Validate the transaction amount and recipient
+      // const recipientPubKey = new PublicKey(recipient);
+      // const amountInLamports = parseFloat(amount) * 1e9;
+      // await validateTransfer(connection, signatureInfo.signature, {
+      //   recipient: recipientPubKey,
+      //   amount: BigInt(amountInLamports),
+      //   reference: referencePubKey,
+      // });
+
+      setStatus("completed");
+      toast.success("Payment confirmed on blockchain!");
+    } catch (error: any) {
+      console.log("Payment check error:", error.message);
+
+      // FindReferenceError means no transaction found yet - this is normal
+      if (
+        error.name === "FindReferenceError" ||
+        error.message?.includes("not found")
+      ) {
+        console.log("Transaction not found yet, will retry...");
+        setStatus("pending");
+      } else {
+        // Other errors might be actual problems
+        console.error("Error checking payment:", error);
+        setStatus("pending");
+        toast.error("Error checking payment status");
+      }
+    }
+  };
+
+  // Poll for payment status
   useEffect(() => {
-    if (!reference) return;
+    if (status !== "pending" && status !== "processing") return;
+    if (!referencemain) return;
+
+    // Check immediately
+    checkForPayment();
+
+    // Then poll every 5 seconds
+    const interval = setInterval(() => {
+      checkForPayment();
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [referencemain, status]);
+
+  // Generate QR code
+  useEffect(() => {
+    if (!reference || !qrContainerRef.current) return;
 
     const generateQR = async () => {
       try {
-        // In a real implementation, use @solana/pay to generate the payment URL
-        const paymentUrl = `solana:${recipient}?amount=${amount}&reference=${reference}&label=${encodeURIComponent(
-          label
-        )}&message=${encodeURIComponent(message)}`;
+        const url =
+          `solana:https://839c0e76fe5c.ngrok-free.app/api/create-transaction/${referencemain}`;
+        const qrCode = createQR(url, 350, "white");
 
-        // For demo purposes, generate a QR code using a placeholder
-        // In production, use createQR from @solana/pay
-        const qrUrl = `/placeholder.svg?height=280&width=280&query=Solana Pay QR Code for ${amount} SOL`;
-        setQrDataUrl(qrUrl);
-
-        console.log("[v0] Payment URL generated:", paymentUrl);
+        // Clear existing QR code first
+        if (qrContainerRef.current) {
+          qrContainerRef.current.innerHTML = "";
+          qrCode.append(qrContainerRef.current);
+        }
       } catch (error) {
-        console.error("[v0] Error generating QR:", error);
-        toast({
-          title: "Error",
-          description: "Failed to generate payment QR code",
-          variant: "destructive",
-        });
+        console.error("Error generating QR code:", error);
+        toast.error("Failed to generate QR code");
       }
     };
 
     generateQR();
-  }, [reference, recipient, amount, label, message, toast]);
+    checkForPayment();
+  }, [reference, recipient, amount, label, message]);
 
   // Timer countdown
   useEffect(() => {
@@ -141,7 +234,7 @@ export default function PaymentPage() {
     navigator.clipboard.writeText(text);
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
-    toast(`${field} copied to clipboard`)
+    toast(`${field} copied to clipboard`);
   };
 
   // Status badge
@@ -244,15 +337,9 @@ export default function PaymentPage() {
             <div className="space-y-3">
               <div
                 ref={qrContainerRef}
-                className="bg-white p-6 rounded-xl border-2 border-border flex items-center justify-center"
+                className="bg-white p-6 rounded-xl border-2 border-border flex items-center justify-center min-h-[280px]"
               >
-                {qrDataUrl ? (
-                  <img
-                    src={qrDataUrl || "/placeholder.svg"}
-                    alt="Payment QR Code"
-                    className="w-full h-auto max-w-[280px]"
-                  />
-                ) : (
+                {!reference && (
                   <div className="w-[280px] h-[280px] flex items-center justify-center">
                     <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
                   </div>

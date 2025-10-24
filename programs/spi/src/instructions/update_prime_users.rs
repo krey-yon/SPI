@@ -1,5 +1,5 @@
 use super::CreatePrimeUsersMerkleTreePDA;
-use crate::error::MembershipError;
+use crate::error::ErrorCode;
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
@@ -18,7 +18,7 @@ pub fn update_membership_root(
 
     require!(
         ctx.accounts.admin.key() == membership.authority,
-        MembershipError::Unauthorized
+        ErrorCode::Unauthorized
     );
 
     membership.merkle_root = new_merkle_root;

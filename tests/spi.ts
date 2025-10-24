@@ -1,62 +1,90 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Spi } from "../target/types/spi";
-import keccak256 from "keccak256";
-import MerkleTree from "merkletreejs";
+import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 
 describe("spi", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
 
   const program = anchor.workspace.spi as Program<Spi>;
+  anchor.setProvider(anchor.AnchorProvider.env());
 
-  it("Create prime users merkle tree and store it in pda", async () => {
-    const users = [
-      "4RkyG245JtLz8H7dZ1Lw9o1Qj3Z4s2S6s9g3h5k2N",
-      "9eX2W1p3jG6Tf2k8R4N7x9C1b5B3y4Z6h7k8M2J5",
-      "2H2M1J3c6k9p8F5h2B1d4X7s6N9g2R5c1t8v7W6y",
-      "5U8N1Y4x9v7b6Z5e2K1q3F8p4M2R7j9d6C1h3G5t",
-      "7J2f8g4h6k9p1Q5w7x9y2T4c6V8b1N3m5R7t2H4q",
-    ];
-    const leaves = users.map((x) => keccak256(x));
-    // Build the Merkle tree
-    const tree = new MerkleTree(leaves, keccak256, { sortPairs: true });
-    const root = tree.getRoot();
-    const merkleRootBytes = Array.from(root);
+  // Helper function to get SOL balance
+  async function getBalance(pubkey: anchor.web3.PublicKey): Promise<number> {
+    const provider = anchor.AnchorProvider.env();
+    return await provider.connection.getBalance(pubkey);
+  }
 
-    const provider = anchor.AnchorProvider.local();
-    const tx = await program.methods
-      .createPrimeUserMerklePda(merkleRootBytes)
-      .accounts({
-        admin: provider.wallet.publicKey,
-      })
-      .rpc();
-    console.log("Your transaction signature", tx);
-  });
+  const RENT_EXEMPT_MINIMUM = 890880;
 
-  it("updating the merkle tree", async () => {
-    const users = [
-      "4RkyG245JtLz8H7dZ1Lw9o1Qj3Z4s2S6s9g3h5k2N",
-      "9eX2W1p3jG6Tf2k8R4N7x9C1b5B3y4Z6h7k8M2J5",
-      "2H2M1J3c6k9p8F5h2B1d4X7s6N9g2R5c1t8v7W6y",
-      "5U8N1Y4x9v7b6Z5e2K1q3F8p4M2R7j9d6C1h3G5t",
-      "7J2f8g4h6k9p1Q5w7x9y2T4c6V8b1N3m5R7t2H4q",
-    ];
-    const leaves = users.map((x) => keccak256(x));
-    // Build the Merkle tree
-    const tree = new MerkleTree(leaves, keccak256, { sortPairs: true });
-    const newLeaf = keccak256("DWMUhPcij6YoUJop3pMQLgpqnTnwLd6LA4Ja1Tq8e6f2");
-    tree.addLeaf(newLeaf);
-    const root = tree.getRoot();
-    const merkleRootBytes = Array.from(root);
+  // describe("spi_transfer", () => {
+  //   anchor.setProvider(anchor.AnchorProvider.env());
 
-    const provider = anchor.AnchorProvider.local();
-    const tx = await program.methods
-      .updatePrimeUserMerklePda(merkleRootBytes)
-      .accounts({
-        admin: provider.wallet.publicKey,
-      })
-      .rpc();
-    console.log("your transaction sig is: ", tx);
+  //   // const program = anchor.workspace.customSp as Program<Spi>;
+  //   const program = anchor.workspace.spi as Program<Spi>;
+  //   const provider = anchor.AnchorProvider.local();
+
+  //   it("Transfer 10 SOL with 1% fee", async () => {
+  //     // Create test accounts
+  //     const sender = provider.wallet;
+  //     const recipient = new PublicKey(
+  //       "DWMUhPcij6YoUJop3pMQLgpqnTnwLd6LA4Ja1Tq8e6f2"
+  //     );
+  //     const feeCollector = new PublicKey(
+  //       "C5MJDfqfyYTtVcfhHqyGa2J12tfs2isdwZBgxSY9qbJF"
+  //     );
+
+  //     // Amount to transfer: 10 SOL
+  //     const transferAmount = new anchor.BN(1 * LAMPORTS_PER_SOL);
+
+  //     console.log("\n🔵 Initial Setup:");
+  //     console.log("Sender:", sender.publicKey.toBase58());
+  //     console.log(
+  //       "Transfer Amount:",
+  //       transferAmount.toNumber() / LAMPORTS_PER_SOL,
+  //       "SOL"
+  //     );
+  //     // Execute transfer with fee
+  //     const tx = await program.methods
+  //       .transfer(transferAmount)
+  //       .accounts({
+  //         sender: sender.publicKey,
+  //         recipient: recipient,
+  //         feeCollector: feeCollector,
+  //         // systemProgram: anchor.web3.SystemProgram.programId,
+  //       })
+  //       .rpc();
+
+  //     const ata = new PublicKey("9tHMx5e9gJkYAfTKbrWTv6V1DR7xihRWjfHXiiLnS73");
+  //     const mintAddres = new PublicKey("6q7ib5iHidx5peiyUc28r5mXDzTBQnc7mAyfQq76f3My")
+
+  //     // const tx2 = await program.methods.mintToUser(new anchor.BN(100 * LAMPORTS_PER_SOL)).accounts({
+  //     //   mint: mintAddres,
+  //     //   owner: sender.publicKey,
+  //     //   payer: sender.publicKey,
+  //     //   recipient: recipient,
+
+  //     // }).rpc();
+
+  //     console.log("\n✅ Transaction signature:", tx);
+  //     // console.log("token mint sig: ", tx2)
+  //   });
+  // });
+  //
+  it("mint token", async () => {
+    const mintAddres = new PublicKey("6q7ib5iHidx5peiyUc28r5mXDzTBQnc7mAyfQq76f3My")
+    const recipient = new PublicKey(
+      "DWMUhPcij6YoUJop3pMQLgpqnTnwLd6LA4Ja1Tq8e6f2"
+    );
+    const sender = anchor.AnchorProvider.local();
+    
+    const tx = await program.methods.rewardPoints(new anchor.BN(100 * LAMPORTS_PER_SOL)).accounts({
+      mint: mintAddres,
+      owner: sender.publicKey,
+      payer: sender.publicKey,
+      recipient: recipient,
+    }).rpc();
+    console.log(tx)
   });
 });
