@@ -37,9 +37,10 @@ pub mod spi {
     pub fn create_user_asa_program(
         ctx: Context<CreateUserASAAccounts>,
         name: String,
+        merkle_proof: Vec<[u8; 32]>,
         valid_till_unix_timestamp: u64,
     ) -> Result<()> {
-        create_user_asa(ctx, name, valid_till_unix_timestamp)?;
+        create_user_asa(ctx, name,merkle_proof , valid_till_unix_timestamp)?;
         Ok(())
     }
     

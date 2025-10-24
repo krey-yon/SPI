@@ -9,12 +9,8 @@ import {
   LAMPORTS_PER_SOL,
   PublicKey,
 } from "@solana/web3.js";
-import { BN } from "bn.js";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import { addTransaction, getTransaction, updateTransaction } from "@/lib/db";
-import { getAssociatedTokenAddress } from "@solana/spl-token";
-import { TOKEN_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
-import { findReference } from "@solana/pay";
 
 // Create Solana connection
 const connection = new Connection(RPC_URL, "confirmed");

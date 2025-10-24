@@ -46,5 +46,33 @@
     "userPubkey": "3gRm7Aj1x22JBu3LPRhWm1SNeEc6jHaC46uxH65Er6rg",
     "amount": 100,
     "status": "minted"
+  },
+  {
+    "reference": "8Q9oncadyuMsvusCet83mLX7ND9oYNjGNUG6abh4f9Qf",
+    "userPubkey": "3gRm7Aj1x22JBu3LPRhWm1SNeEc6jHaC46uxH65Er6rg",
+    "merkleProof": [],
+    "amount": 100,
+    "status": "minted"
+  },
+  {
+    "reference": "5VfRpL9WQs5YMMCyRLYQvHr65s4adcQC5HSg6fng7MH3",
+    "userPubkey": "",
+    "merkleProof": [],
+    "amount": 0,
+    "status": "pending"
+  },
+  {
+    "reference": "Gsz21Bz7v7jHHuK7V9ntM6eGPdU9uBZ6Nov1w6jrjGC6",
+    "userPubkey": "",
+    "merkleProof": [],
+    "amount": 0,
+    "status": "pending"
+  },
+  {
+    "reference": "AbswaZYuC4JYABnKeXEGMSHGXRnzMkvtVd6noXivZMnH",
+    "userPubkey": "3gRm7Aj1x22JBu3LPRhWm1SNeEc6jHaC46uxH65Er6rg",
+    "merkleProof": [],
+    "amount": 100,
+    "status": "minted"
   }
 ]

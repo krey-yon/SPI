@@ -42,7 +42,19 @@
                   114,
                   111,
                   111,
-                  116
+                  116,
+                  95,
+                  115,
+                  112,
+                  105,
+                  95,
+                  116,
+                  114,
+                  105,
+                  97,
+                  108,
+                  95,
+                  49
                 ]
               }
             ]
@@ -89,6 +101,9 @@
           "signer": true
         },
         {
+          "name": "customer"
+        },
+        {
           "name": "user_asa",
           "writable": true,
           "pda": {
@@ -115,12 +130,12 @@
                   97,
                   108,
                   95,
-                  52
+                  55
                 ]
               },
               {
                 "kind": "account",
-                "path": "authority"
+                "path": "customer"
               }
             ]
           }
@@ -134,6 +149,17 @@
         {
           "name": "name",
           "type": "string"
+        },
+        {
+          "name": "merkle_proof",
+          "type": {
+            "vec": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
         },
         {
           "name": "valid_till_unix_timestamp",
@@ -362,7 +388,19 @@
                   114,
                   111,
                   111,
-                  116
+                  116,
+                  95,
+                  115,
+                  112,
+                  105,
+                  95,
+                  116,
+                  114,
+                  105,
+                  97,
+                  108,
+                  95,
+                  49
                 ]
               }
             ]
@@ -404,6 +442,9 @@
           "signer": true
         },
         {
+          "name": "customer"
+        },
+        {
           "name": "user_asa",
           "writable": true,
           "pda": {
@@ -430,12 +471,12 @@
                   97,
                   108,
                   95,
-                  52
+                  55
                 ]
               },
               {
                 "kind": "account",
-                "path": "authority"
+                "path": "customer"
               }
             ]
           }
@@ -517,6 +558,16 @@
       "code": 6001,
       "name": "MathOverflow",
       "msg": "Math operation overflow"
+    },
+    {
+      "code": 6002,
+      "name": "NameTooLong",
+      "msg": "❌ Name exceeds maximum length allowed."
+    },
+    {
+      "code": 6003,
+      "name": "MerkleProofTooLarge",
+      "msg": "❌ Merkle proof exceeds maximum length allowed."
     }
   ],
   "types": [
@@ -573,6 +624,17 @@
           {
             "name": "total_transactions",
             "type": "u64"
+          },
+          {
+            "name": "merkle_proof",
+            "type": {
+              "vec": {
+                "array": [
+                  "u8",
+                  32
+                ]
+              }
+            }
           }
         ]
       }

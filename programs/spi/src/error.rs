@@ -6,4 +6,8 @@ pub enum ErrorCode {
     Unauthorized,
     #[msg("Math operation overflow")]
     MathOverflow,
+    #[msg("❌ Name exceeds maximum length allowed.")]
+    NameTooLong,
+    #[msg("❌ Merkle proof exceeds maximum length allowed.")]
+    MerkleProofTooLarge,
 }

@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { Keypair } from "@solana/web3.js";
 import { addTransaction } from "@/lib/db";
 import { createTxnFile } from "@/actions/reward";
+import { useSuccessModal } from "@/components/successModalProvider";
 
 export default function CheckoutDashboard() {
   const [paymentMethod, setPaymentMethod] = useState("wallet");

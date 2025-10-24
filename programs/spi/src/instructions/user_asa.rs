@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use crate::error::ErrorCode;
 
 #[account]
 pub struct UserASA {
@@ -8,19 +9,23 @@ pub struct UserASA {
     pub valid_till_unix_timestamp: u64, // 8 bytes
     pub join_date_unix_timestamp: u64,  // 8 bytes
     pub total_spent: u64,               // 8 bytes
-    pub total_transactions: u64, 
-    // pub merkleProof: Vec<u8>,           // 8 bytes
+    pub total_transactions: u64,        // 8 bytes
+    pub merkle_proof: Vec<[u8; 32]>,           // 32 bytes
 }
 
 #[derive(Accounts)]
 pub struct CreateUserASAAccounts<'info> {
     #[account(mut)]
     authority: Signer<'info>,
+    
+    /// CHECK: The customer account is verified through the PDA seeds derivation
+    customer: AccountInfo<'info>,
+    
     #[account(
-        init,
+        init_if_needed,
         payer = authority,
-        space = 8 + 4 + 20 + 8 + 8 + 8 + 8 + 8 + 8,
-        seeds = [b"user_asa_spi_trial_4", authority.key().as_ref()],
+        space = 8 + 4 + 20 + 8*6 + 4 + 32*10,
+        seeds = [b"user_asa_spi_trial_7", customer.key().as_ref()],
         bump
     )]
     user_asa: Account<'info, UserASA>,
@@ -31,9 +36,13 @@ pub struct CreateUserASAAccounts<'info> {
 pub struct UpdateUserASA<'info> {
     #[account(mut)]
     authority: Signer<'info>,
+    
+    /// CHECK: The customer account is verified through the PDA seeds derivation
+    customer: AccountInfo<'info>,
+    
     #[account(
         mut,
-        seeds = [b"user_asa_spi_trial_4", authority.key().as_ref()],
+        seeds = [b"user_asa_spi_trial_7", customer.key().as_ref()],
         bump
     )]
     user_asa: Account<'info, UserASA>,
@@ -43,9 +52,11 @@ pub struct UpdateUserASA<'info> {
 pub fn create_user_asa(
     ctx: Context<CreateUserASAAccounts>,
     name: String,
+    merkle_proof: Vec<[u8; 32]>,
     valid_till_unix_timestamp: u64,
 ) -> Result<()> {
     let user_asa = &mut ctx.accounts.user_asa;
+    require!(name.len() <= 20, ErrorCode::NameTooLong);
     user_asa.name = name;
     user_asa.spi_tokens = 0;
     user_asa.total_cashback = 0;
@@ -53,9 +64,14 @@ pub fn create_user_asa(
     user_asa.join_date_unix_timestamp = Clock::get()?.unix_timestamp as u64;
     user_asa.total_spent = 0;
     user_asa.total_transactions = 0;
+    user_asa.merkle_proof = merkle_proof;
 
     msg!(
-        "✅ UserASA account created successfully for {:?}",
+        "✅ UserASA account created successfully for customer: {:?}",
+        ctx.accounts.customer.key()
+    );
+    msg!(
+        "   Paid for by authority: {:?}",
         ctx.accounts.authority.key()
     );
     Ok(())
@@ -88,8 +104,8 @@ pub fn update_user_asa(
     }
 
     msg!(
-        "✅ UserASA account updated successfully for {:?}",
-        ctx.accounts.authority.key()
+        "✅ UserASA account updated successfully for customer: {:?}",
+        ctx.accounts.customer.key()
     );
     Ok(())
 }

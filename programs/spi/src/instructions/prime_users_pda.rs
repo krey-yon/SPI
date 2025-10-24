@@ -6,7 +6,7 @@ pub struct CreateMembershipRoot<'info> {
         init, 
         payer = admin, 
         space = 8 + 32 + 32, 
-        seeds = [b"membership_root"], 
+        seeds = [b"membership_root_spi_trial_1"], 
         bump
     )]
     pub membership_root: Account<'info, CreatePrimeUsersMerkleTreePDA>,

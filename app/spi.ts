@@ -48,7 +48,19 @@ export type Spi = {
                   114,
                   111,
                   111,
-                  116
+                  116,
+                  95,
+                  115,
+                  112,
+                  105,
+                  95,
+                  116,
+                  114,
+                  105,
+                  97,
+                  108,
+                  95,
+                  49
                 ]
               }
             ]
@@ -95,6 +107,9 @@ export type Spi = {
           "signer": true
         },
         {
+          "name": "customer"
+        },
+        {
           "name": "userAsa",
           "writable": true,
           "pda": {
@@ -121,12 +136,12 @@ export type Spi = {
                   97,
                   108,
                   95,
-                  52
+                  55
                 ]
               },
               {
                 "kind": "account",
-                "path": "authority"
+                "path": "customer"
               }
             ]
           }
@@ -140,6 +155,17 @@ export type Spi = {
         {
           "name": "name",
           "type": "string"
+        },
+        {
+          "name": "merkleProof",
+          "type": {
+            "vec": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
         },
         {
           "name": "validTillUnixTimestamp",
@@ -368,7 +394,19 @@ export type Spi = {
                   114,
                   111,
                   111,
-                  116
+                  116,
+                  95,
+                  115,
+                  112,
+                  105,
+                  95,
+                  116,
+                  114,
+                  105,
+                  97,
+                  108,
+                  95,
+                  49
                 ]
               }
             ]
@@ -410,6 +448,9 @@ export type Spi = {
           "signer": true
         },
         {
+          "name": "customer"
+        },
+        {
           "name": "userAsa",
           "writable": true,
           "pda": {
@@ -436,12 +477,12 @@ export type Spi = {
                   97,
                   108,
                   95,
-                  52
+                  55
                 ]
               },
               {
                 "kind": "account",
-                "path": "authority"
+                "path": "customer"
               }
             ]
           }
@@ -523,6 +564,16 @@ export type Spi = {
       "code": 6001,
       "name": "mathOverflow",
       "msg": "Math operation overflow"
+    },
+    {
+      "code": 6002,
+      "name": "nameTooLong",
+      "msg": "❌ Name exceeds maximum length allowed."
+    },
+    {
+      "code": 6003,
+      "name": "merkleProofTooLarge",
+      "msg": "❌ Merkle proof exceeds maximum length allowed."
     }
   ],
   "types": [
@@ -579,6 +630,17 @@ export type Spi = {
           {
             "name": "totalTransactions",
             "type": "u64"
+          },
+          {
+            "name": "merkleProof",
+            "type": {
+              "vec": {
+                "array": [
+                  "u8",
+                  32
+                ]
+              }
+            }
           }
         ]
       }

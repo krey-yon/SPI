@@ -17,7 +17,7 @@ import {
 import { toast } from "react-toastify";
 import { createQR, findReference } from "@solana/pay";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { mintSPI } from "@/actions/reward";
+import { useSuccessModal } from "../successModalProvider";
 
 type PaymentStatus =
   | "pending"
@@ -44,6 +44,7 @@ export default function PaymentPage() {
   const [pdaAddress, setPdaAddress] = useState<string>("");
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const qrContainerRef = useRef<HTMLDivElement>(null);
+  const { showModal } = useSuccessModal();
 
   const params = useParams();
   const referencemain = params.url?.toString();
@@ -108,28 +109,20 @@ export default function PaymentPage() {
       }).then((ctx) => {
         console.log("Transaction found issuing rewards spi");
         console.log(ctx.signature)
-        console.log(amount)
-        // mintSPI(amount, referencemain)
       });
 
       console.log("Transaction found:", signatureInfo);
-      toast(signatureInfo!)
-
-      // Optional: Validate the transaction amount and recipient
-      // const recipientPubKey = new PublicKey(recipient);
-      // const amountInLamports = parseFloat(amount) * 1e9;
-      // await validateTransfer(connection, signatureInfo.signature, {
-      //   recipient: recipientPubKey,
-      //   amount: BigInt(amountInLamports),
-      //   reference: referencePubKey,
-      // });
+      // toast(signatureInfo!)
+      // 
+      showModal({
+        title: "Purchase Completed!",
+        message: "Your order has been successfully placed and will be delivered soon.",
+        icon: "check",
+      })
 
       setStatus("completed");
-      toast.success("Payment confirmed on blockchain!");
     } catch (error: any) {
       console.log("Payment check error:", error.message);
-
-      // FindReferenceError means no transaction found yet - this is normal
       if (
         error.name === "FindReferenceError" ||
         error.message?.includes("not found")

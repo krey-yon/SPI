@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { WalletContextProvider } from "@/utils/walletProvider";
 import { ToastContainer } from "react-toastify";
+import { SuccessModalProvider } from "@/components/successModalProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,7 +26,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <WalletContextProvider>{children}</WalletContextProvider>
+        <SuccessModalProvider>
+          <WalletContextProvider>{children}</WalletContextProvider>
+        </SuccessModalProvider>
         <ToastContainer />
       </body>
     </html>

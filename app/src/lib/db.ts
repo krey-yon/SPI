@@ -5,6 +5,7 @@ import path from "path";
 export interface Transaction {
   reference: string;
   userPubkey: string;
+  merkleProof: number[];
   amount: number;
   status: string;
 }
@@ -62,6 +63,7 @@ export function addTransaction(reference: string) {
     db.push({
       reference,
       userPubkey: "",
+      merkleProof: [], 
       amount: 0,
       status: "pending",
     });

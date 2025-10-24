@@ -4,7 +4,7 @@ use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct UpdateMembershipRoot<'info> {
-    #[account(mut, seeds = [b"membership_root"], bump)]
+    #[account(mut, seeds = [b"membership_root_spi_trial_1"], bump)]
     pub membership_root: Account<'info, CreatePrimeUsersMerkleTreePDA>,
 
     pub admin: Signer<'info>,
