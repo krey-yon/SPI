@@ -1,16 +1,13 @@
-"use client";
-
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { useState, useEffect } from "react";
+"use client"
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
-  const [mounted, setMounted] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    router.push("/v1");
+  }, [router]);
 
-  if (!mounted) return null;
-
-  return <div><WalletMultiButton /></div>;
+  return null;
 }

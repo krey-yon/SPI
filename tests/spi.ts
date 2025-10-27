@@ -1,9 +1,14 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { Spi } from "../target/types/spi";
-import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import {
+  ComputeBudgetProgram,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+} from "@solana/web3.js";
 import { MerkleTree } from "merkletreejs";
 import keccak256 from "keccak256";
+import { Spi } from "../target/types/spi";
 
 const users = [
   "9yq4PYKfL2TANuTmkA7jzqgSh3vVt7Sy8rS7pKXJtWfM",
@@ -15,7 +20,7 @@ const users = [
   "EPgAqJZQ6T84P2GAsKh4x7h7zoxsGTHV3doh8vF7b6yE",
   "9nXhBph2G1LR6qVZYm3Z1t7bKJkoUXYgzokhr4BdGEum",
   "6j1Xc3o3aMB5qT3bdy7Xog1oY2myG6ZsX2rA9wLEtW8G",
-  "BbpF8vmQH5DJ6xYkZCEy2obSmxVRnq1yKAv9hRkhtnhU",
+  "EGqp1Wx49TmTgE7XR5CARvzq3dxLVbRXji4KcD9REdtG",
 ];
 
 describe("spi", () => {
@@ -157,29 +162,19 @@ describe("spi", () => {
     const provider = anchor.AnchorProvider.local();
 
     const leaves = users.map((x) => keccak256(x));
-    // Build the Merkle tree
     const tree = new MerkleTree(leaves, keccak256, { sortPairs: true });
-    console.log(tree.toString());
-    const root = tree.getRoot();
+
     const newLeaf = keccak256("Ce4tFuiaaxrWWorNUfqUAH87LGnLVZKvxGz9emfudEbA");
     tree.addLeaf(newLeaf);
-    console.log(tree.getRoot().toString());
 
     const proof = tree.getProof(newLeaf);
     const proofBytes = proof.map((x) => Array.from(x.data));
     const validTill = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30;
-    // const tx = await program.methods
-    //   .createUserAsaProgram("vikas", proofBytes, new anchor.BN(validTill))
-    //   .accounts({
-    //     authority: provider.wallet.publicKey,
-    //   })
-    //   .rpc();
 
-    
-    // ✅ Define the customer wallet
-    const customerPubkey = new PublicKey("EGqp1Wx49TmTgE7XR5CARvzq3dxLVbRXji4KcD9REdtG");
-    
-    // ✅ Derive the PDA using the customer's public key (not the authority's)
+    const customerPubkey = new PublicKey(
+      "3gRm7Aj1x22JBu3LPRhWm1SNeEc6jHaC46uxH65Er6rg"
+    );
+
     const [userAsaPda] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("user_asa_spi_trial_7"), customerPubkey.toBuffer()],
       program.programId
@@ -189,14 +184,24 @@ describe("spi", () => {
     console.log("Authority (payer):", provider.wallet.publicKey.toBase58());
     console.log("UserASA PDA:", userAsaPda.toBase58());
 
+    // ✅ Add compute budget instruction
+    const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
+      units: 400_000,
+    });
+
+    const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+      microLamports: 1,
+    });
+
     const tx2 = await program.methods
       .createUserAsaProgram("vikas", proofBytes, new anchor.BN(validTill))
       .accounts({
-        authority: provider.wallet.publicKey,  // ✅ Who signs and pays
-        customer: customerPubkey,               // ✅ For whom the ASA is created
-        userAsa: userAsaPda,                    // ✅ Explicitly provide the PDA
+        authority: provider.wallet.publicKey,
+        customer: customerPubkey,
+        userAsa: userAsaPda,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
+      .preInstructions([modifyComputeUnits, addPriorityFee]) // ✅ Add these
       .rpc();
 
     console.log("✅ ASA created successfully, tx:", tx2);

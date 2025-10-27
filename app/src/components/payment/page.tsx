@@ -25,7 +25,7 @@ type PaymentStatus =
   | "completed"
   | "expired"
   | "failed";
-
+//add env here todo
 const connection = new Connection("https://solana-devnet.g.alchemy.com/v2/s-2PSwB8NlPzdjTKg1a1a", "confirmed");
 
 export default function PaymentPage() {
@@ -48,44 +48,6 @@ export default function PaymentPage() {
 
   const params = useParams();
   const referencemain = params.url?.toString();
-
-  // Generate reference and PDA on mount
-  useEffect(() => {
-    const generateReference = () => {
-      const ref = `REF${Date.now()}${Math.random()
-        .toString(36)
-        .substring(2, 9)
-        .toUpperCase()}`;
-      setReference(ref);
-      return ref;
-    };
-
-    const generatePDA = () => {
-      // Simulated PDA address (in real implementation, derive from program)
-      const pda = `${Math.random().toString(36).substring(2, 15)}${Math.random()
-        .toString(36)
-        .substring(2, 15)}`.toUpperCase();
-      setPdaAddress(pda);
-    };
-
-    generateReference();
-    generatePDA();
-  }, []);
-
-  // Generate QR code
-  // useEffect(() => {
-  //   if (!reference) return;
-
-  //   const generateQR = () => {
-  //     const url = "solana:https://7d0338b412f4.ngrok-free.app/api/create-transfer"
-  //     const qrCodeFromSpay = createQR(url)
-  //     console.log(qrCodeFromSpay)
-  //     // qrContainerRef.current(qrCodeFromSpay)
-  //     qrCodeFromSpay.append(qrContainerRef.current)
-  //   }
-
-  //   generateQR();
-  // }, [reference, recipient, amount, label, message, toast]);
 
   // Check for payment with proper error handling
   const checkForPayment = async () => {
@@ -113,7 +75,7 @@ export default function PaymentPage() {
 
       console.log("Transaction found:", signatureInfo);
       // toast(signatureInfo!)
-      // 
+      //
       showModal({
         title: "Purchase Completed!",
         message: "Your order has been successfully placed and will be delivered soon.",
@@ -121,22 +83,26 @@ export default function PaymentPage() {
       })
 
       setStatus("completed");
-    } catch (error: any) {
-      console.log("Payment check error:", error.message);
+    } catch (error: unknown) {
+      const err = error as { name?: string; message?: string };
+      const name = err?.name ?? "UnknownError";
+      const message = err?.message ?? "No error message";
+
+      console.log("Payment check error:", message);
+
       if (
-        error.name === "FindReferenceError" ||
-        error.message?.includes("not found")
+        name === "FindReferenceError" ||
+        message.toLowerCase().includes("not found")
       ) {
         console.log("Transaction not found yet, will retry...");
         setStatus("pending");
       } else {
-        // Other errors might be actual problems
-        console.error("Error checking payment:", error);
+        console.error("Unexpected error checking payment:", { name, message, error });
         setStatus("pending");
-        toast.error("Error checking payment status");
+        toast.error("Error checking payment status. Please try again.");
       }
     }
-  };
+
 
   // Poll for payment status
   useEffect(() => {
@@ -161,7 +127,7 @@ export default function PaymentPage() {
     const generateQR = async () => {
       try {
         const url =
-          `solana:https://839c0e76fe5c.ngrok-free.app/api/create-transaction/${referencemain}`;
+          `solana:https:spi.kreyon.in/api/create-transaction/${referencemain}-${amount}-${discount}`;
         const qrCode = createQR(url, 350, "white");
 
         // Clear existing QR code first

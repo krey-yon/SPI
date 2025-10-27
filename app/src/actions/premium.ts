@@ -1,5 +1,4 @@
 import { RPC_URL } from "@/app/constant";
-import { getTransaction } from "@/lib/db";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
@@ -15,10 +14,12 @@ const keypair = Keypair.fromSecretKey(bs58.decode(process.env.PRIVATE_KEY!));
 // Create a proper wallet wrapper for Anchor
 const wallet = {
   publicKey: keypair.publicKey,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   signTransaction: async (tx: any) => {
     tx.partialSign(keypair);
     return tx;
   },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   signAllTransactions: async (txs: any[]) => {
     return txs.map((tx) => {
       tx.partialSign(keypair);
@@ -27,6 +28,7 @@ const wallet = {
   },
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const provider = new anchor.AnchorProvider(connection, wallet as any, {
   commitment: "confirmed",
 });

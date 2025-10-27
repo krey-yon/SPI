@@ -3,14 +3,17 @@ import { RECIPIENT, FEE_COLLECTOR, AMOUNT_SOL, RPC_URL } from "@/app/constant";
 import * as anchor from "@coral-xyz/anchor";
 import idl from "../../../../../idl.json";
 import { Spi } from "../../../../../spi";
-import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
-import { db } from "@/db";
-import { getTransaction, updateTransaction } from "@/lib/db";
+import { ComputeBudgetProgram, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { mintSPI } from "@/actions/reward";
 import { findReference } from "@solana/pay";
+import { accountToAmount, addReferenceToAccount } from "@/actions/db";
+import { getKv } from "@/lib/kv";
+import { findUserAsaPda } from "@/utils/helper";
+import { readUserAsaPdaData } from "@/utils/parsePda";
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 
-// Create Solana connection
 const connection = new Connection(RPC_URL, "confirmed");
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const provider = new anchor.AnchorProvider(connection, {} as any, {});
 const program = new anchor.Program(
   idl as anchor.Idl,
@@ -33,99 +36,6 @@ export async function GET(
   });
 }
 
-// export async function POST(req: NextRequest, { params }: { params: { reference: string } }) {
-//   console.log("==========================================");
-//   console.log("POST /api/pay/:reference");
-
-//   try {
-//     const body = await req.json();
-//     console.log("Body:", body);
-//     console.log("Params:", params);
-
-//     const account = body?.account;
-//     if (!account) {
-//       return NextResponse.json({ error: "Account required in body" }, { status: 400 });
-//     }
-
-//     const reference = await params?.reference;
-//     if (!reference) {
-//       return NextResponse.json({ error: "Reference required in URL" }, { status: 400 });
-//     }
-
-//     console.log("✅ Sender:", account);
-//     console.log("✅ Reference:", reference);
-
-//     const senderPubkey = new PublicKey(account);
-//     const recipientPubkey = new PublicKey(RECIPIENT);
-//     const feeCollectorPubkey = new PublicKey(FEE_COLLECTOR);
-//     const programId = new PublicKey(PROGRAM_ID);
-//     const referencePubkey = new PublicKey(reference);
-
-//     const lamports = AMOUNT_SOL * LAMPORTS_PER_SOL;
-
-//     console.log("✅ Transfer details:");
-//     console.log("  - Amount:", lamports, "lamports");
-//     console.log("  - Sender:", senderPubkey.toBase58());
-//     console.log("  - Recipient:", recipientPubkey.toBase58());
-//     console.log("  - Fee Collector:", feeCollectorPubkey.toBase58());
-
-//     const discriminator = await getDiscriminator("transfer_with_fee");
-//     const amountBytes = u64ToBytes(lamports);
-//     const data = Buffer.concat([discriminator, amountBytes]);
-
-//     console.log("✅ Instruction data:");
-//     console.log("  - Discriminator:", discriminator.toString("hex"));
-//     console.log("  - Amount bytes:", amountBytes.toString("hex"));
-
-//     const instruction = new TransactionInstruction({
-//       programId,
-//       keys: [
-//         { pubkey: senderPubkey, isSigner: true, isWritable: true },
-//         { pubkey: recipientPubkey, isSigner: false, isWritable: true },
-//         { pubkey: feeCollectorPubkey, isSigner: false, isWritable: true },
-//         { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-//         { pubkey: referencePubkey, isSigner: false, isWritable: false },
-//       ],
-//       data,
-//     });
-
-//     console.log("✅ Instruction created with", instruction.keys.length, "accounts");
-
-//     const { blockhash } = await connection.getLatestBlockhash();
-//     console.log("✅ Blockhash:", blockhash);
-
-//     const message = new TransactionMessage({
-//       payerKey: senderPubkey,
-//       recentBlockhash: blockhash,
-//       instructions: [instruction],
-//     }).compileToV0Message();
-
-//     const transaction = new VersionedTransaction(message);
-//     const serialized = transaction.serialize();
-//     const base64 = Buffer.from(serialized).toString("base64");
-
-//     console.log("✅ Transaction created, size:", base64.length, "bytes");
-//     console.log("==========================================");
-
-//     const fee = lamports * 0.01;
-//     const recipientAmount = lamports * 0.99;
-
-//     return NextResponse.json({
-//       transaction: base64,
-//       message: `Transfer ${AMOUNT_SOL} SOL (Fee: ${(fee / LAMPORTS_PER_SOL).toFixed(3)} SOL, Recipient: ${(recipientAmount / LAMPORTS_PER_SOL).toFixed(3)} SOL)`,
-//     });
-//   } catch (error) {
-//     console.error("❌ Error:", error);
-//     return NextResponse.json(
-//       {
-//         error: "Failed to create transaction",
-//         details: error instanceof Error ? error.message : String(error),
-//       },
-//       { status: 500 }
-//     );
-//   }
-// }
-
 export async function POST(
   req: NextRequest,
   context: { params: Promise<{ reference: string }> }
@@ -136,11 +46,11 @@ export async function POST(
   try {
     const body = await req.json();
 
-    // ✅ Await the promise for params
     const { reference } = await context.params;
+    const [referenceKey, amountStr, percentageStr] = reference.split("-");
 
-    console.log("Body:", body);
-    console.log("Reference:", reference);
+    // console.log("Body:", body);
+    console.log("Reference:", referenceKey);
 
     const account = body?.account;
     if (!account) {
@@ -150,17 +60,15 @@ export async function POST(
       );
     }
 
-    updateTransaction(reference, {
-      userPubkey: account,
-      amount: 100, // or any number you want
-    });
-
-    // const newTx = {
-    //   reference,
+    // updateTransaction(reference, {
     //   userPubkey: account,
-    //   amount: 0,
-    //   status: "pending" as const,
-    // };
+    //   amount: 100, // or any number you want
+    // });
+    const amount = parseInt(amountStr);
+    const percentage = parseInt(percentageStr);
+
+    await addReferenceToAccount(reference, account);
+    await accountToAmount(account, amount);
 
     if (!reference) {
       return NextResponse.json(
@@ -177,7 +85,8 @@ export async function POST(
     const feeCollectorPubkey = new PublicKey(FEE_COLLECTOR);
     const referencePubkey = new PublicKey(reference);
 
-    const lamports = AMOUNT_SOL * LAMPORTS_PER_SOL;
+    const Amount_Sol = Math.floor(amount * (1 - percentage / 100));
+    const lamports = Amount_Sol * LAMPORTS_PER_SOL;
 
     console.log("✅ Transfer details:");
     console.log("  - Amount:", lamports, "lamports");
@@ -192,7 +101,7 @@ export async function POST(
         recipient: recipientPubkey,
         feeCollector: feeCollectorPubkey,
       })
-      .instruction(); // <-- builds the correct Instruction
+      .instruction();
 
     ix.keys.push({
       pubkey: referencePubkey,
@@ -233,14 +142,19 @@ const pollAndMint = async (
   pollInterval = 2000,
   maxAttempts = 30
 ) => {
-  const txRecord = getTransaction(reference);
-  if (!txRecord) throw new Error("Transaction not found in DB");
+  const account = await getKv(reference);
+  const amount = await getKv(account!);
 
-  if (txRecord.status === "completed") {
-    console.log("✅ Transaction already processed, skipping mint");
-    return;
-  }
+  const userPubKey = await getKv(reference);
+  const asaPdaKey = await findUserAsaPda(new PublicKey(userPubKey!));
+  const { spi_tokens, total_cashback, total_spent, total_transactions } =
+    await readUserAsaPdaData(asaPdaKey);
 
+  const new_spi_tokens = spi_tokens + parseInt(amount!) / 100;
+  const new_total_spent = total_spent + parseInt(amount!);
+  const new_total_cashback = total_cashback + parseInt(amount!) / 100;
+  const new_total_transactions = total_transactions + 1;
+  
   let attempts = 0;
   while (attempts < maxAttempts) {
     try {
@@ -250,17 +164,46 @@ const pollAndMint = async (
       if (tx.signature) {
         console.log("🎯 Transaction confirmed on-chain");
 
-        // Update DB status to prevent double minting
-        updateTransaction(reference, { status: "completed" });
-
-        // Call mintSPI once
-        const tx2 = await mintSPI(txRecord.amount, reference);
+        if (!amount) return;
+        const tx2 = await mintSPI(parseInt(amount) / 100, reference);
         console.log(tx2);
         console.log("✅ Tokens minted successfully");
         break;
       }
+
+      
+      const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
+        units: 400_000,
+      });
+
+      const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+        microLamports: 1,
+      });
+
+      const keypair = Keypair.fromSecretKey(bs58.decode(process.env.PRIVATE_KEY!));
+      
+      const tx2 = await program.methods
+        .updateUserAsaProgram(
+          new anchor.BN(new_spi_tokens),
+          new anchor.BN(new_total_cashback),
+          new anchor.BN(new_total_spent),
+          new anchor.BN(new_total_transactions),
+          null
+        )
+        .accounts({
+          authority: new PublicKey(userPubKey!),
+          customer: new PublicKey(userPubKey!),
+          userAsa: asaPdaKey,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([keypair])
+        .preInstructions([modifyComputeUnits, addPriorityFee])
+        .rpc();
+      console.info("Transaction completed successfully and updated asa", tx2);
+
       return;
-    } catch (err) {
+    } catch (err: unknown) {
+      console.error(err);
       console.log(`⏳ Transaction not found yet, attempt ${attempts + 1}`);
     }
 

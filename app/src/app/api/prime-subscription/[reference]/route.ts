@@ -4,13 +4,13 @@ import * as anchor from "@coral-xyz/anchor";
 import idl from "../../../../../idl.json";
 import { Spi } from "../../../../../spi";
 import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
-import { getTransaction, updateTransaction } from "@/lib/db";
-import { mintSPI } from "@/actions/reward";
 import { findReference } from "@solana/pay";
 import { handleBuyPrime } from "@/actions/premium";
+import { createNft } from "@/actions/nft";
 
 // Create Solana connection
 const connection = new Connection(RPC_URL, "confirmed");
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const provider = new anchor.AnchorProvider(connection, {} as any, {});
 const program = new anchor.Program(
   idl as anchor.Idl,
@@ -105,7 +105,7 @@ export async function POST(
     const base64 = Buffer.from(transaction.serialize()).toString("base64");
 
     //pollAndUpdateStatus
-    pollAndGrantSubAndASA(account, reference)
+    pollAndGrantSubAndASA(account, reference);
     return NextResponse.json({
       transaction: base64,
       message: `Transfer ${AMOUNT_SOL} LAMPORTS_PER_SOL
@@ -129,7 +129,6 @@ const pollAndGrantSubAndASA = async (
   pollInterval = 2000,
   maxAttempts = 30
 ) => {
-
   let attempts = 0;
   while (attempts < maxAttempts) {
     try {
@@ -139,12 +138,17 @@ const pollAndGrantSubAndASA = async (
       if (tx.signature) {
         console.log("🎯 Transaction confirmed on-chain");
 
-        handleBuyPrime(accountPubkey)
+        handleBuyPrime(accountPubkey);
+        createNft(accountPubkey);
         break;
       }
       return;
-    } catch (err) {
-      console.log(`⏳ Transaction not found yet, attempt ${attempts + 1}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error(`Error name: ${error.name}, message: ${error.message}`);
+      } else {
+        console.log(`⏳ Transaction not found yet, attempt ${attempts + 1}`);
+      }
     }
 
     await new Promise((res) => setTimeout(res, pollInterval));

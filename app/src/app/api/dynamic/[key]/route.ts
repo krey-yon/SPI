@@ -1,16 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import path from "path";
-import { escapeXml } from "@/utils/helper";
+import { escapeXml, findUserAsaPda } from "@/utils/helper";
+import { PublicKey } from "@solana/web3.js";
+import { readUserAsaPdaData } from "@/utils/parsePda";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { key: string } }
 ) {
+  const userPubKey = new PublicKey(params.key);
+
+  const asaPdaKey = await findUserAsaPda(userPubKey);
+  const {
+    name,
+    spi_tokens,
+    total_cashback,
+    valid_till_unix_timestamp,
+    join_date_unix_timestamp,
+    total_spent,
+    total_transactions,
+  } = await readUserAsaPdaData(asaPdaKey);
+
   const key = params.key;
-  const spiToken = 370;
-  const CbEarned = "$23";
-  const totalReward = 5;
+  const spiToken = spi_tokens;
+  const CbEarned = total_cashback;
+  const totalReward = 3;
 
   function truncateAddress(str: string) {
     if (str.length <= 23) {

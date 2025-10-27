@@ -10,7 +10,6 @@ import {
   PublicKey,
 } from "@solana/web3.js";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
-import { addTransaction, getTransaction, updateTransaction } from "@/lib/db";
 
 // Create Solana connection
 const connection = new Connection(RPC_URL, "confirmed");
@@ -21,10 +20,12 @@ const keypair = Keypair.fromSecretKey(bs58.decode(process.env.PRIVATE_KEY!));
 // Create a proper wallet wrapper for Anchor
 const wallet = {
   publicKey: keypair.publicKey,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   signTransaction: async (tx: any) => {
     tx.partialSign(keypair);
     return tx;
   },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   signAllTransactions: async (txs: any[]) => {
     return txs.map((tx) => {
       tx.partialSign(keypair);
@@ -41,10 +42,6 @@ const program = new anchor.Program(
   idl as anchor.Idl,
   provider
 ) as anchor.Program<Spi>;
-
-const mintAddres = new PublicKey(
-  "6q7ib5iHidx5peiyUc28r5mXDzTBQnc7mAyfQq76f3My"
-);
 
 export const mintSPI = async (amount: number, reference: string) => {
   console.log("🔍 [mintSPI] Starting for reference:", reference);
@@ -71,8 +68,7 @@ export const mintSPI = async (amount: number, reference: string) => {
   // const accountInfo = await connection.getTokenAccountBalance(recipientATA);
   // console.log("Token balance:", accountInfo.value.uiAmountString);
   const mintAddres = new PublicKey("6q7ib5iHidx5peiyUc28r5mXDzTBQnc7mAyfQq76f3My")
-  
-  // Minting
+
   try {
     console.log(`💰 [mintSPI] Minting ${amount} tokens to recipient ATA...`);
     const tx = await program.methods

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -14,12 +13,9 @@ import { Separator } from "@/components/ui/separator";
 import { ShoppingCart, ArrowRight, Package, CreditCard } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Keypair } from "@solana/web3.js";
-import { addTransaction } from "@/lib/db";
-import { createTxnFile } from "@/actions/reward";
-import { useSuccessModal } from "@/components/successModalProvider";
+import { createReferenceKey } from "@/actions/db";
 
 export default function CheckoutDashboard() {
-  const [paymentMethod, setPaymentMethod] = useState("wallet");
   const router = useRouter();
 
   const orderItems = [
@@ -36,10 +32,10 @@ export default function CheckoutDashboard() {
   const tax = subtotal * taxRate;
   const platformFee = 2.5;
   const total = subtotal + tax + platformFee;
-  
-  const handleProceedToPayment = () => {
+  //add error handling here
+  const handleProceedToPayment = async () => {
     const reference = Keypair.generate().publicKey.toString();
-    createTxnFile(reference);
+    await createReferenceKey(reference);
     router.push(`/raw/payment/${reference}`);
   };
 
