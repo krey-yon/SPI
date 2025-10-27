@@ -56,7 +56,7 @@ export const mintSPI = async (amount: number, reference: string) => {
   }
 
   // Recipient and associated token account
-  const recipient = new PublicKey(storedTx.userPubkey);
+  // const recipient = new PublicKey(storedTx.userPubkey);
   const recipientPubkey = new PublicKey(storedTx.userPubkey);
   
   // Derive the correct ATA

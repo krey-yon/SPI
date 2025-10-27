@@ -26,7 +26,10 @@ type PaymentStatus =
   | "expired"
   | "failed";
 //add env here todo
-const connection = new Connection("https://solana-devnet.g.alchemy.com/v2/s-2PSwB8NlPzdjTKg1a1a", "confirmed");
+const connection = new Connection(
+  "https://solana-devnet.g.alchemy.com/v2/s-2PSwB8NlPzdjTKg1a1a",
+  "confirmed"
+);
 
 export default function PaymentPage() {
   const searchParams = useSearchParams();
@@ -70,7 +73,7 @@ export default function PaymentPage() {
         finality: "confirmed",
       }).then((ctx) => {
         console.log("Transaction found issuing rewards spi");
-        console.log(ctx.signature)
+        console.log(ctx.signature);
       });
 
       console.log("Transaction found:", signatureInfo);
@@ -78,9 +81,10 @@ export default function PaymentPage() {
       //
       showModal({
         title: "Purchase Completed!",
-        message: "Your order has been successfully placed and will be delivered soon.",
+        message:
+          "Your order has been successfully placed and will be delivered soon.",
         icon: "check",
-      })
+      });
 
       setStatus("completed");
     } catch (error: unknown) {
@@ -97,371 +101,378 @@ export default function PaymentPage() {
         console.log("Transaction not found yet, will retry...");
         setStatus("pending");
       } else {
-        console.error("Unexpected error checking payment:", { name, message, error });
+        console.error("Unexpected error checking payment:", {
+          name,
+          message,
+          error,
+        });
         setStatus("pending");
         toast.error("Error checking payment status. Please try again.");
       }
     }
 
+    // Poll for payment status
+    useEffect(() => {
+      if (status !== "pending" && status !== "processing") return;
+      if (!referencemain) return;
 
-  // Poll for payment status
-  useEffect(() => {
-    if (status !== "pending" && status !== "processing") return;
-    if (!referencemain) return;
-
-    // Check immediately
-    checkForPayment();
-
-    // Then poll every 5 seconds
-    const interval = setInterval(() => {
+      // Check immediately
       checkForPayment();
-    }, 2500);
 
-    return () => clearInterval(interval);
-  }, [referencemain, status]);
+      // Then poll every 5 seconds
+      const interval = setInterval(() => {
+        checkForPayment();
+      }, 2500);
 
-  // Generate QR code
-  useEffect(() => {
-    if (!reference || !qrContainerRef.current) return;
+      return () => clearInterval(interval);
+    }, [referencemain, status]);
 
-    const generateQR = async () => {
-      try {
-        const url =
-          `solana:https:spi.kreyon.in/api/create-transaction/${referencemain}-${amount}-${discount}`;
-        const qrCode = createQR(url, 350, "white");
+    // Generate QR code
+    useEffect(() => {
+      if (!reference || !qrContainerRef.current) return;
 
-        // Clear existing QR code first
-        if (qrContainerRef.current) {
-          qrContainerRef.current.innerHTML = "";
-          qrCode.append(qrContainerRef.current);
+      const generateQR = async () => {
+        try {
+          const url = `solana:https:spi.kreyon.in/api/create-transaction/${referencemain}-${amount}-${discount}`;
+          const qrCode = createQR(url, 350, "white");
+
+          // Clear existing QR code first
+          if (qrContainerRef.current) {
+            qrContainerRef.current.innerHTML = "";
+            qrCode.append(qrContainerRef.current);
+          }
+        } catch (error) {
+          console.error("Error generating QR code:", error);
+          toast.error("Failed to generate QR code");
         }
-      } catch (error) {
-        console.error("Error generating QR code:", error);
-        toast.error("Failed to generate QR code");
+      };
+
+      generateQR();
+      checkForPayment();
+    }, [reference, recipient, amount, label, message]);
+
+    // Timer countdown
+    useEffect(() => {
+      if (status !== "pending" && status !== "processing") return;
+
+      const timer = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            setStatus("expired");
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }, [status]);
+
+    // Format time
+    const formatTime = (seconds: number) => {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${secs.toString().padStart(2, "0")}`;
+    };
+
+    // Check payment status
+    const checkStatus = async () => {
+      setStatus("processing");
+
+      // Simulate API call to check transaction status
+      setTimeout(() => {
+        // In real implementation, check Solana blockchain for transaction with reference
+        const isSuccess = Math.random() > 0.3; // 70% success rate for demo
+
+        if (isSuccess) {
+          setStatus("completed");
+          toast("Your payment has been confirmed on the blockchain.");
+        } else {
+          setStatus("pending");
+          toast("Transaction not found yet. Please try again.");
+        }
+      }, 2000);
+    };
+
+    // Copy to clipboard
+    const copyToClipboard = (text: string, field: string) => {
+      navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+      toast(`${field} copied to clipboard`);
+    };
+
+    // Status badge
+    const getStatusBadge = () => {
+      switch (status) {
+        case "pending":
+          return (
+            <Badge
+              variant="outline"
+              className="bg-blue-50 text-blue-700 border-blue-200"
+            >
+              Awaiting Payment
+            </Badge>
+          );
+        case "processing":
+          return (
+            <Badge
+              variant="outline"
+              className="bg-yellow-50 text-yellow-700 border-yellow-200"
+            >
+              Checking Status
+            </Badge>
+          );
+        case "completed":
+          return (
+            <Badge
+              variant="outline"
+              className="bg-green-50 text-green-700 border-green-200"
+            >
+              Payment Successful
+            </Badge>
+          );
+        case "expired":
+          return (
+            <Badge
+              variant="outline"
+              className="bg-red-50 text-red-700 border-red-200"
+            >
+              Payment Expired
+            </Badge>
+          );
+        case "failed":
+          return (
+            <Badge
+              variant="outline"
+              className="bg-red-50 text-red-700 border-red-200"
+            >
+              Payment Failed
+            </Badge>
+          );
       }
     };
 
-    generateQR();
-    checkForPayment();
-  }, [reference, recipient, amount, label, message]);
-
-  // Timer countdown
-  useEffect(() => {
-    if (status !== "pending" && status !== "processing") return;
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          setStatus("expired");
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [status]);
-
-  // Format time
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  // Check payment status
-  const checkStatus = async () => {
-    setStatus("processing");
-
-    // Simulate API call to check transaction status
-    setTimeout(() => {
-      // In real implementation, check Solana blockchain for transaction with reference
-      const isSuccess = Math.random() > 0.3; // 70% success rate for demo
-
-      if (isSuccess) {
-        setStatus("completed");
-        toast("Your payment has been confirmed on the blockchain.");
-      } else {
-        setStatus("pending");
-        toast("Transaction not found yet. Please try again.");
-      }
-    }, 2000);
-  };
-
-  // Copy to clipboard
-  const copyToClipboard = (text: string, field: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
-    toast(`${field} copied to clipboard`);
-  };
-
-  // Status badge
-  const getStatusBadge = () => {
-    switch (status) {
-      case "pending":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-blue-50 text-blue-700 border-blue-200"
-          >
-            Awaiting Payment
-          </Badge>
-        );
-      case "processing":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-yellow-50 text-yellow-700 border-yellow-200"
-          >
-            Checking Status
-          </Badge>
-        );
-      case "completed":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-green-50 text-green-700 border-green-200"
-          >
-            Payment Successful
-          </Badge>
-        );
-      case "expired":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-red-50 text-red-700 border-red-200"
-          >
-            Payment Expired
-          </Badge>
-        );
-      case "failed":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-red-50 text-red-700 border-red-200"
-          >
-            Payment Failed
-          </Badge>
-        );
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="space-y-4 pb-4">
-          {/* Header with logo */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">
-                  SP
-                </span>
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl">
+          <CardHeader className="space-y-4 pb-4">
+            {/* Header with logo */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                  <span className="text-primary-foreground font-bold text-sm">
+                    SP
+                  </span>
+                </div>
+                <div>
+                  <h1 className="font-bold text-lg">SolPay</h1>
+                  <p className="text-xs text-muted-foreground">
+                    Solana Payment
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="font-bold text-lg">SolPay</h1>
-                <p className="text-xs text-muted-foreground">Solana Payment</p>
-              </div>
+              {getStatusBadge()}
             </div>
-            {getStatusBadge()}
-          </div>
 
-          <Separator />
+            <Separator />
 
-          {/* Payment details */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Paying to</span>
-              <span className="font-semibold text-sm">{label}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Amount</span>
-              <span className="text-2xl font-bold text-primary">
-                {amount} SOL
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Message</span>
-              <span className="text-sm text-right max-w-[200px] truncate">
-                {message}
-              </span>
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-6">
-          {/* QR Code */}
-          {status !== "completed" && status !== "failed" && (
+            {/* Payment details */}
             <div className="space-y-3">
-              <div
-                ref={qrContainerRef}
-                className="bg-white p-6 rounded-xl border-2 border-border flex items-center justify-center min-h-[280px]"
-              >
-                {!reference && (
-                  <div className="w-[280px] h-[280px] flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Paying to</span>
+                <span className="font-semibold text-sm">{label}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Amount</span>
+                <span className="text-2xl font-bold text-primary">
+                  {amount} SOL
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Message</span>
+                <span className="text-sm text-right max-w-[200px] truncate">
+                  {message}
+                </span>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            {/* QR Code */}
+            {status !== "completed" && status !== "failed" && (
+              <div className="space-y-3">
+                <div
+                  ref={qrContainerRef}
+                  className="bg-white p-6 rounded-xl border-2 border-border flex items-center justify-center min-h-[280px]"
+                >
+                  {!reference && (
+                    <div className="w-[280px] h-[280px] flex items-center justify-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <p className="text-center text-sm text-muted-foreground">
+                  Scan this QR code with your Solana wallet
+                </p>
+              </div>
+            )}
+
+            {/* Success/Failure state */}
+            {status === "completed" && (
+              <div className="text-center space-y-4 py-8">
+                <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-12 h-12 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-green-700">
+                    Payment Successful!
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Your transaction has been confirmed on the Solana blockchain
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {status === "expired" && (
+              <div className="text-center space-y-4 py-8">
+                <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mx-auto">
+                  <XCircle className="w-12 h-12 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-red-700">
+                    Payment Expired
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    This payment request has expired. Please request a new
+                    payment link.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Timer */}
+            {(status === "pending" || status === "processing") && (
+              <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                <Clock className="w-4 h-4" />
+                <span className="text-sm font-medium">
+                  Time remaining:{" "}
+                  <span className="text-foreground font-bold">
+                    {formatTime(timeLeft)}
+                  </span>
+                </span>
+              </div>
+            )}
+
+            {/* Transaction details */}
+            <div className="space-y-3 bg-muted/50 p-4 rounded-lg">
+              <h3 className="font-semibold text-sm">Transaction Details</h3>
+
+              <div className="space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    Reference No.
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-mono text-right break-all">
+                      {reference}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0"
+                      onClick={() => copyToClipboard(reference, "Reference")}
+                    >
+                      {copiedField === "Reference" ? (
+                        <Check className="w-3 h-3 text-green-600" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                    </Button>
                   </div>
-                )}
-              </div>
-              <p className="text-center text-sm text-muted-foreground">
-                Scan this QR code with your Solana wallet
-              </p>
-            </div>
-          )}
-
-          {/* Success/Failure state */}
-          {status === "completed" && (
-            <div className="text-center space-y-4 py-8">
-              <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-12 h-12 text-green-600" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-green-700">
-                  Payment Successful!
-                </h3>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Your transaction has been confirmed on the Solana blockchain
-                </p>
-              </div>
-            </div>
-          )}
-
-          {status === "expired" && (
-            <div className="text-center space-y-4 py-8">
-              <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mx-auto">
-                <XCircle className="w-12 h-12 text-red-600" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-red-700">
-                  Payment Expired
-                </h3>
-                <p className="text-sm text-muted-foreground mt-2">
-                  This payment request has expired. Please request a new payment
-                  link.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Timer */}
-          {(status === "pending" || status === "processing") && (
-            <div className="flex items-center justify-center gap-2 text-muted-foreground">
-              <Clock className="w-4 h-4" />
-              <span className="text-sm font-medium">
-                Time remaining:{" "}
-                <span className="text-foreground font-bold">
-                  {formatTime(timeLeft)}
-                </span>
-              </span>
-            </div>
-          )}
-
-          {/* Transaction details */}
-          <div className="space-y-3 bg-muted/50 p-4 rounded-lg">
-            <h3 className="font-semibold text-sm">Transaction Details</h3>
-
-            <div className="space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <span className="text-xs text-muted-foreground">
-                  Reference No.
-                </span>
-                <div className="flex items-center gap-1">
-                  <span className="text-xs font-mono text-right break-all">
-                    {reference}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 shrink-0"
-                    onClick={() => copyToClipboard(reference, "Reference")}
-                  >
-                    {copiedField === "Reference" ? (
-                      <Check className="w-3 h-3 text-green-600" />
-                    ) : (
-                      <Copy className="w-3 h-3" />
-                    )}
-                  </Button>
                 </div>
-              </div>
 
-              <div className="flex items-start justify-between gap-2">
-                <span className="text-xs text-muted-foreground">
-                  PDA Address
-                </span>
-                <div className="flex items-center gap-1">
-                  <span className="text-xs font-mono text-right break-all max-w-[180px]">
-                    {pdaAddress}
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    PDA Address
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 shrink-0"
-                    onClick={() => copyToClipboard(pdaAddress, "PDA Address")}
-                  >
-                    {copiedField === "PDA Address" ? (
-                      <Check className="w-3 h-3 text-green-600" />
-                    ) : (
-                      <Copy className="w-3 h-3" />
-                    )}
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-mono text-right break-all max-w-[180px]">
+                      {pdaAddress}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0"
+                      onClick={() => copyToClipboard(pdaAddress, "PDA Address")}
+                    >
+                      {copiedField === "PDA Address" ? (
+                        <Check className="w-3 h-3 text-green-600" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex items-start justify-between gap-2">
-                <span className="text-xs text-muted-foreground">Recipient</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-xs font-mono text-right break-all max-w-[180px]">
-                    {recipient}
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    Recipient
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 shrink-0"
-                    onClick={() => copyToClipboard(recipient, "Recipient")}
-                  >
-                    {copiedField === "Recipient" ? (
-                      <Check className="w-3 h-3 text-green-600" />
-                    ) : (
-                      <Copy className="w-3 h-3" />
-                    )}
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-mono text-right break-all max-w-[180px]">
+                      {recipient}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0"
+                      onClick={() => copyToClipboard(recipient, "Recipient")}
+                    >
+                      {copiedField === "Recipient" ? (
+                        <Check className="w-3 h-3 text-green-600" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Action buttons */}
-          {status === "pending" && (
-            <Button onClick={checkStatus} className="w-full" size="lg">
-              Check Payment Status
-            </Button>
-          )}
+            {/* Action buttons */}
+            {status === "pending" && (
+              <Button onClick={checkStatus} className="w-full" size="lg">
+                Check Payment Status
+              </Button>
+            )}
 
-          {status === "processing" && (
-            <Button disabled className="w-full" size="lg">
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Checking Status...
-            </Button>
-          )}
+            {status === "processing" && (
+              <Button disabled className="w-full" size="lg">
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Checking Status...
+              </Button>
+            )}
 
-          {(status === "completed" || status === "expired") && (
-            <Button
-              onClick={() => (window.location.href = "/")}
-              className="w-full"
-              size="lg"
-              variant="outline"
-            >
-              Back to Home
-            </Button>
-          )}
+            {(status === "completed" || status === "expired") && (
+              <Button
+                onClick={() => (window.location.href = "/")}
+                className="w-full"
+                size="lg"
+                variant="outline"
+              >
+                Back to Home
+              </Button>
+            )}
 
-          {/* Security note */}
-          <p className="text-xs text-center text-muted-foreground">
-            🔒 Secured by Solana blockchain. Never share your private keys.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
+            {/* Security note */}
+            <p className="text-xs text-center text-muted-foreground">
+              🔒 Secured by Solana blockchain. Never share your private keys.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 }

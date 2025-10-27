@@ -101,6 +101,7 @@ export default function PrimeMembershipPage() {
       })
 
       toast.success("Prime membership successfully activated!")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.log("Payment check error:", error.message)
       if (error.name === "FindReferenceError" || error.message?.includes("not found")) {

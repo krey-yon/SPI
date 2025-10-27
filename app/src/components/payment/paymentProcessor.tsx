@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, Loader2, AlertCircle, ArrowLeft } from "lucide-react"
 import { toast } from "react-toastify"
-import { log } from "node:console"
 
 interface PaymentProcessorProps {
   paymentUrl: string
@@ -86,7 +85,7 @@ export function PaymentProcessor({ paymentUrl, onBack }: PaymentProcessorProps) 
         {/* Payment Details */}
         <div className="space-y-4 p-6 bg-muted/50 rounded-lg">
           <div className="text-center pb-4 border-b">
-            <p className="text-sm text-muted-foreground mb-2">You're paying</p>
+            <p className="text-sm text-muted-foreground mb-2">You&apos;re paying</p>
             <p className="text-4xl font-bold text-primary">{paymentDetails.amount} SOL</p>
             <p className="text-sm text-muted-foreground mt-1">
               ≈ ${(Number.parseFloat(paymentDetails.amount) * 150).toFixed(2)} USD

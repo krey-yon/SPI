@@ -36,7 +36,7 @@ export default function CheckoutDashboard() {
   const handleProceedToPayment = async () => {
     const reference = Keypair.generate().publicKey.toString();
     await createReferenceKey(reference);
-    router.push(`/raw/payment/${reference}`);
+    router.push(`/v1/payment/${reference}`);
   };
 
   return (
