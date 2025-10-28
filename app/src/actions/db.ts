@@ -13,4 +13,10 @@ export const addReferenceToAccount = async (referenceId: string, accountId: stri
 
 export const accountToAmount = async (account: string, amount: number) => {
   setKv(account, amount.toString());
-};
+}
+
+export const accountNftAddress = async (account: string, nftAddress: string) => {
+  const key = `${account}-nftMintAddress`
+  setKv(key, nftAddress);
+}
+

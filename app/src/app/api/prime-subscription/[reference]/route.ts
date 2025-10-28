@@ -7,6 +7,7 @@ import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { findReference } from "@solana/pay";
 import { handleBuyPrime } from "@/actions/premium";
 import { createNft } from "@/actions/nft";
+import { accountNftAddress } from "@/actions/db";
 
 // Create Solana connection
 const connection = new Connection(RPC_URL, "confirmed");
@@ -139,7 +140,8 @@ const pollAndGrantSubAndASA = async (
         console.log("🎯 Transaction confirmed on-chain");
 
         handleBuyPrime(accountPubkey);
-        createNft(accountPubkey);
+        await accountNftAddress(accountPubkey, accountPubkey);
+        await createNft(accountPubkey);
         break;
       }
       return;

@@ -9,6 +9,7 @@ import {
 import { create, mplCore } from "@metaplex-foundation/mpl-core";
 import { irysUploader } from "@metaplex-foundation/umi-uploader-irys";
 import bs58 from "bs58";
+import { setKv } from "@/lib/kv";
 
 export async function createNft(userKey: string) {
   const umi = createUmi("https://api.devnet.solana.com")
@@ -75,6 +76,8 @@ export async function createNft(userKey: string) {
     owner: ownernft,
   }).sendAndConfirm(umi);
 
+  await setKv(`${userKey}-nftMintAddress`, asset.publicKey.toString())
+  
   console.log("✅ NFT Created and Transferred!");
   const signatureBase58 = bs58.encode(tx.signature);
 
