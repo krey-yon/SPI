@@ -28,8 +28,9 @@ const program = new anchor.Program(
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { reference: string } }
+  context: { params: Promise<{ reference: string }> }
 ) {
+  const params = await context.params;
   console.log("==========================================");
   console.log("GET request received");
   console.log("Reference:", params.reference);
@@ -44,7 +45,7 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { reference: string } }
+  context: { params: Promise<{ reference: string }> }
 ) {
   console.log("==========================================");
   console.log("POST /api/pay/:reference");
@@ -52,7 +53,7 @@ export async function POST(
   try {
     const body = await req.json();
 
-    const { reference } = params;
+    const { reference } = await context.params;
     const [referenceKey, amountStr, percentageStr] = reference.split("-");
 
     // console.log("Body:", body);
