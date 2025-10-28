@@ -90,7 +90,7 @@ export async function POST(
     const senderPubkey = new PublicKey(account);
     const recipientPubkey = new PublicKey(RECIPIENT);
     const feeCollectorPubkey = new PublicKey(FEE_COLLECTOR);
-    const referencePubkey = new PublicKey(reference);
+    const referencePubkey = new PublicKey(referenceKey);
 
     const Amount_Sol = Math.floor(amount * (1 - percentage / 100));
     const lamports = Amount_Sol * LAMPORTS_PER_SOL;
