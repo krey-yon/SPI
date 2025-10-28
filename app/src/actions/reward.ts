@@ -10,6 +10,7 @@ import {
   PublicKey,
 } from "@solana/web3.js";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
+import { getKv } from "@/lib/kv";
 
 // Create Solana connection
 const connection = new Connection(RPC_URL, "confirmed");
@@ -34,6 +35,7 @@ const wallet = {
   },
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const provider = new anchor.AnchorProvider(connection, wallet as any, {
   commitment: "confirmed",
 });
@@ -45,19 +47,19 @@ const program = new anchor.Program(
 
 export const mintSPI = async (amount: number, reference: string) => {
   console.log("🔍 [mintSPI] Starting for reference:", reference);
-
+  const consumerKey = await getKv(reference)
   // Fetch transaction from DB
-  const storedTx = getTransaction(reference);
-  console.log("📂 [mintSPI] Retrieved stored transaction:", storedTx);
+  // const storedTx = getTransaction(reference);
+  // console.log("📂 [mintSPI] Retrieved stored transaction:", storedTx);
 
-  if (!storedTx?.userPubkey) {
+  if (!consumerKey) {
     console.error("❌ [mintSPI] No userPubkey found in stored transaction");
     throw new Error("No userPubkey found in stored transaction");
   }
 
   // Recipient and associated token account
   // const recipient = new PublicKey(storedTx.userPubkey);
-  const recipientPubkey = new PublicKey(storedTx.userPubkey);
+  const recipientPubkey = new PublicKey(consumerKey);
   
   // Derive the correct ATA
   // const recipientATA = await getAssociatedTokenAddress(mintAddres, recipientPubkey);
@@ -85,19 +87,19 @@ export const mintSPI = async (amount: number, reference: string) => {
     console.log("✅ [mintSPI] Mint transaction successful. Signature:", tx);
 
     // Update status in DB
-    updateTransaction(reference, { status: "minted" });
+    // updateTransaction(reference, { status: "minted" });
     console.log("📂 [mintSPI] Updated transaction status to 'minted'");
 
     return tx;
   } catch (err) {
     console.error("❌ [mintSPI] Mint transaction failed:", err);
-    updateTransaction(reference, { status: "failed" });
+    // updateTransaction(reference, { status: "failed" });
     throw err;
   }
 };
 
 
-export const createTxnFile = async (reference: string) => {
-  addTransaction(reference);
-  return { success: true };
-};
+// export const createTxnFile = async (reference: string) => {
+//   addTransaction(reference);
+//   return { success: true };
+// };
