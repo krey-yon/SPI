@@ -51,7 +51,7 @@ export const handleBuyPrime = async (account: string) => {
     .accounts({
       authority: provider.wallet.publicKey, // ✅ Who signs and pays
       customer: customerPubkey, // ✅ For whom the ASA is created
-      // @ts-ignore
+      //@ts-expect-error someerror
       userAsa: userAsaPda, // ✅ Explicitly provide the PDA
       systemProgram: anchor.web3.SystemProgram.programId,
     })
