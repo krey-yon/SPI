@@ -198,9 +198,11 @@ const pollAndMint = async (
           new anchor.BN(new_total_transactions),
           null
         )
+
         .accounts({
           authority: new PublicKey(userPubKey!),
           customer: new PublicKey(userPubKey!),
+          //@ts-expect-error ergfe
           userAsa: asaPdaKey,
           systemProgram: anchor.web3.SystemProgram.programId,
         })

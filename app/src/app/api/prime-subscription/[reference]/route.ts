@@ -20,8 +20,9 @@ const program = new anchor.Program(
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { reference: string } }
+  context: { params: Promise<{ reference: string }> }
 ) {
+  const params = await context.params;
   console.log("==========================================");
   console.log("GET request received");
   console.log("Reference:", params.reference);

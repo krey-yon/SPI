@@ -7,10 +7,10 @@ import { readUserAsaPdaData } from "@/utils/parsePda";
 
 export async function GET(
   request: NextRequest,
-  context: { params: { key: string } }
+  context: { params: Promise<{ key: string }> }
 ) {
   try {
-    const {key} = context.params;
+    const {key} = await context.params;
     const userPubKey = new PublicKey(key);
 
     // Get PDA and data
@@ -100,3 +100,4 @@ export async function GET(
     );
   }
 }
+
