@@ -3,7 +3,13 @@ import { RECIPIENT, FEE_COLLECTOR, AMOUNT_SOL, RPC_URL } from "@/app/constant";
 import * as anchor from "@coral-xyz/anchor";
 import idl from "../../../../../idl.json";
 import { Spi } from "../../../../../spi";
-import { ComputeBudgetProgram, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import {
+  ComputeBudgetProgram,
+  Connection,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+} from "@solana/web3.js";
 import { mintSPI } from "@/actions/reward";
 import { findReference } from "@solana/pay";
 import { accountToAmount, addReferenceToAccount } from "@/actions/db";
@@ -38,7 +44,7 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  context: { params: Promise<{ reference: string }> }
+  context: { params: { reference: string } }
 ) {
   console.log("==========================================");
   console.log("POST /api/pay/:reference");
@@ -46,7 +52,7 @@ export async function POST(
   try {
     const body = await req.json();
 
-    const { reference } = await context.params;
+    const { reference } = context.params;
     const [referenceKey, amountStr, percentageStr] = reference.split("-");
 
     // console.log("Body:", body);
@@ -154,7 +160,7 @@ const pollAndMint = async (
   const new_total_spent = total_spent + parseInt(amount!);
   const new_total_cashback = total_cashback + parseInt(amount!) / 100;
   const new_total_transactions = total_transactions + 1;
-  
+
   let attempts = 0;
   while (attempts < maxAttempts) {
     try {
@@ -171,7 +177,6 @@ const pollAndMint = async (
         break;
       }
 
-      
       const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
         units: 400_000,
       });
@@ -180,8 +185,10 @@ const pollAndMint = async (
         microLamports: 1,
       });
 
-      const keypair = Keypair.fromSecretKey(bs58.decode(process.env.PRIVATE_KEY!));
-      
+      const keypair = Keypair.fromSecretKey(
+        bs58.decode(process.env.PRIVATE_KEY!)
+      );
+
       const tx2 = await program.methods
         .updateUserAsaProgram(
           new anchor.BN(new_spi_tokens),
