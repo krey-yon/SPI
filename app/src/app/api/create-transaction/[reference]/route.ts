@@ -44,7 +44,7 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  context: { params: { reference: string } }
+  { params }: { params: { reference: string } }
 ) {
   console.log("==========================================");
   console.log("POST /api/pay/:reference");
@@ -52,7 +52,7 @@ export async function POST(
   try {
     const body = await req.json();
 
-    const { reference } = context.params;
+    const { reference } = params;
     const [referenceKey, amountStr, percentageStr] = reference.split("-");
 
     // console.log("Body:", body);
