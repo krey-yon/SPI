@@ -116,6 +116,8 @@ export async function POST(
       isWritable: false,
     });
 
+    console.log("txn sig", ix)
+    
     const { blockhash } = await connection.getLatestBlockhash();
     const message = new anchor.web3.TransactionMessage({
       payerKey: senderPubkey,
