@@ -21,7 +21,7 @@ export function PaymentQRCode({ recipient, amount, label, message, reference, on
   const [copied, setCopied] = useState(false)
   // const { toast } = useToast()
   console.log("mounted")
-  const qrcode2 = createQR("solana:https://7d0338b412f4.ngrok-free.app/api/create-transfer")
+  const qrcode2 = createQR("solana:https://spi.kreyon.in/api/create-transfer")
   // log(qrcode)
   console.log(qrcode2)
   
@@ -36,7 +36,7 @@ export function PaymentQRCode({ recipient, amount, label, message, reference, on
     const url = `solana:${recipient}?${params.toString()}`
     setSolanaPayUrl(url)
 
-    const qrcode2 = createQR("solana:https://7d0338b412f4.ngrok-free.app/api/create-transfer")
+    const qrcode2 = createQR("solana:https://spi.kreyon.in/api/create-transfer")
     // log(qrcode)
     console.log(qrcode2)
     // Generate QR Code

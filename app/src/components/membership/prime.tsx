@@ -13,7 +13,7 @@ import { useSuccessModal } from "../successModalProvider"
 
 const PRIME_PRICE = 1.0 // SOL
 const PRIME_DURATION = "year"
-const API_BASE_URL = "https://d96dc6092691.ngrok-free.app/" // Update with your ngrok URL
+const API_BASE_URL = "https://spi.kreyon.in/" // Update with your ngrok URL
 
 type PaymentStatus = "idle" | "pending" | "processing" | "completed" | "expired" | "failed"
 
