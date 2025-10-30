@@ -63,15 +63,9 @@ export default function CheckoutDashboard() {
   };
 
   const discountOptions = [0, 25, 50, 75, 100];
-
-  async function handlefindasadata() {
-    const res = await readUserAsaPdaData(new PublicKey("2J9K8kF4BrpAeseRAYZN2HzFaFy5P5pCyFwEQeoY1rAZ"))
-    console.log(res);
-  }
   
   return (
     <div className="min-h-screen bg-background">
-      <button onClick={handlefindasadata} >click me</button>
       {/*<header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
