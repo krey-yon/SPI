@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { RECIPIENT, FEE_COLLECTOR, AMOUNT_SOL, RPC_URL } from "@/app/constant";
+import { RECIPIENT, FEE_COLLECTOR, RPC_URL } from "@/app/constant";
 import * as anchor from "@coral-xyz/anchor";
 import idl from "../../../../../idl.json";
 import { Spi } from "../../../../../spi";
@@ -14,28 +14,23 @@ import { mintSPI } from "@/actions/reward";
 import { findReference } from "@solana/pay";
 import { accountToAmount, addReferenceToAccount } from "@/actions/db";
 import { getKv } from "@/lib/kv";
-import { findUserAsaPda } from "@/utils/helper";
+import { findUserAsaPda, getSolPrice, updateAsa } from "@/utils/helper";
 import { readUserAsaPdaData } from "@/utils/parsePda";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 
 const connection = new Connection(RPC_URL, "confirmed");
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const provider = new anchor.AnchorProvider(connection, {} as any, {});
-const program = new anchor.Program(
-  idl as anchor.Idl,
-  provider
-) as anchor.Program<Spi>;
+const program = new anchor.Program(idl as anchor.Idl, provider) as anchor.Program<Spi>;
 
-export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ reference: string }> }
-) {
+function logStep(step: string, data?: any) {
+  console.log(`\n🪵 [${new Date().toISOString()}] ${step}`);
+  if (data) console.dir(data, { depth: null });
+}
+
+export async function GET(req: NextRequest, context: { params: Promise<{ reference: string }> }) {
   const params = await context.params;
-  console.log("==========================================");
-  console.log("GET request received");
-  console.log("Reference:", params.reference);
-  console.log("Headers:", Object.fromEntries(req.headers.entries()));
-  console.log("==========================================");
+  logStep("GET /api/pay", { reference: params.reference, headers: Object.fromEntries(req.headers.entries()) });
 
   return NextResponse.json({
     label: "My Store",
@@ -43,64 +38,52 @@ export async function GET(
   });
 }
 
-export async function POST(
-  req: NextRequest,
-  context: { params: Promise<{ reference: string }> }
-) {
-  console.log("==========================================");
-  console.log("POST /api/pay/:reference");
+export async function POST(req: NextRequest, context: { params: Promise<{ reference: string }> }) {
+  logStep("POST /api/pay/:reference — STARTED");
 
   try {
     const body = await req.json();
-
     const { reference } = await context.params;
     const [referenceKey, amountStr, percentageStr] = reference.split("-");
 
-    // console.log("Body:", body);
-    console.log("Reference:", referenceKey);
+    logStep("Parsed Request", { referenceKey, amountStr, percentageStr, body });
 
     const account = body?.account;
     if (!account) {
-      return NextResponse.json(
-        { error: "Account required in body" },
-        { status: 400 }
-      );
+      logStep("❌ Missing account in request body");
+      return NextResponse.json({ error: "Account required in body" }, { status: 400 });
     }
 
-    // updateTransaction(reference, {
-    //   userPubkey: account,
-    //   amount: 100, // or any number you want
-    // });
-    const amount = parseInt(amountStr);
-    const percentage = parseInt(percentageStr);
+    const amount = parseFloat(amountStr);
+    const percentage = parseFloat(percentageStr);
 
-    await addReferenceToAccount(reference, account);
+    await addReferenceToAccount(referenceKey, account);
     await accountToAmount(account, amount);
-
-    if (!reference) {
-      return NextResponse.json(
-        { error: "Reference required in URL" },
-        { status: 400 }
-      );
-    }
-
-    console.log("✅ Sender:", account);
-    console.log("✅ Reference:", reference);
+    logStep("Stored reference and amount mapping in KV", { referenceKey, account, amount });
 
     const senderPubkey = new PublicKey(account);
     const recipientPubkey = new PublicKey(RECIPIENT);
     const feeCollectorPubkey = new PublicKey(FEE_COLLECTOR);
     const referencePubkey = new PublicKey(referenceKey);
 
-    const Amount_Sol = Math.floor(amount * (1 - percentage / 100));
-    const lamports = Amount_Sol * LAMPORTS_PER_SOL;
+    logStep("Public Keys Derived", {
+      sender: senderPubkey.toBase58(),
+      recipient: recipientPubkey.toBase58(),
+      feeCollector: feeCollectorPubkey.toBase58(),
+      reference: referencePubkey.toBase58(),
+    });
 
-    console.log("✅ Transfer details:");
-    console.log("  - Amount:", lamports, "lamports");
-    console.log("  - Sender:", senderPubkey.toBase58());
-    console.log("  - Recipient:", recipientPubkey.toBase58());
-    console.log("  - Fee Collector:", feeCollectorPubkey.toBase58());
+    // 🔹 Fetch SOL Price
+    const solPrice = await getSolPrice();
+    logStep("Fetched SOL Price", { solPrice });
 
+    // 🔹 USD → SOL conversion
+    const amountUsd = Math.floor(amount * (1 - percentage / 100));
+    const amountSol = amountUsd / solPrice;
+    const lamports = Math.floor(amountSol * LAMPORTS_PER_SOL);
+    logStep("Calculated Amounts", { amountUsd, amountSol, lamports });
+
+    // 🔹 Create transaction instruction
     const ix = await program.methods
       .transfer(new anchor.BN(lamports))
       .accounts({
@@ -116,9 +99,11 @@ export async function POST(
       isWritable: false,
     });
 
-    console.log("txn sig", ix)
-    
+    logStep("Instruction Created", { ix });
+
     const { blockhash } = await connection.getLatestBlockhash();
+    logStep("Fetched Latest Blockhash", { blockhash });
+
     const message = new anchor.web3.TransactionMessage({
       payerKey: senderPubkey,
       recentBlockhash: blockhash,
@@ -128,31 +113,40 @@ export async function POST(
     const transaction = new anchor.web3.VersionedTransaction(message);
     const base64 = Buffer.from(transaction.serialize()).toString("base64");
 
-    pollAndMint(reference);
+    logStep("Transaction Serialized", { base64 });
+
+    // Trigger poll + mint logic
+    logStep("⏳ Starting pollAndMint...");
+    pollAndMint(referenceKey);
+
+    logStep("✅ POST Complete — Returning response");
+
     return NextResponse.json({
       transaction: base64,
-      message: `Transfer ${AMOUNT_SOL} LAMPORTS_PER_SOL
-      ).toFixed(3)} SOL)`,
+      message: `Transfer ${lamports} lamports (${amountSol.toFixed(5)} SOL)`,
     });
   } catch (error) {
-    console.error("❌ Error:", error);
+    console.error("❌ Error in POST /api/pay:", error);
     return NextResponse.json(
       {
         error: "Failed to create transaction",
-        details: error instanceof Error ? error.message : String(error),
+        details:
+          error instanceof Error
+            ? { message: error.message, stack: error.stack }
+            : String(error),
       },
       { status: 500 }
     );
   }
 }
 
-const pollAndMint = async (
-  reference: string,
-  pollInterval = 2000,
-  maxAttempts = 30
-) => {
+const pollAndMint = async (reference: string, pollInterval = 2000, maxAttempts = 30) => {
+  logStep("pollAndMint — STARTED", { reference });
+
   const account = await getKv(reference);
   const amount = await getKv(account!);
+
+  logStep("Fetched from KV", { account, amount });
 
   const userPubKey = await getKv(reference);
   const asaPdaKey = await findUserAsaPda(new PublicKey(userPubKey!));
@@ -164,6 +158,13 @@ const pollAndMint = async (
   const new_total_cashback = total_cashback + parseInt(amount!) / 100;
   const new_total_transactions = total_transactions + 1;
 
+  logStep("Prepared ASA Update Values", {
+    new_spi_tokens,
+    new_total_spent,
+    new_total_cashback,
+    new_total_transactions,
+  });
+
   let attempts = 0;
   while (attempts < maxAttempts) {
     try {
@@ -171,55 +172,21 @@ const pollAndMint = async (
         finality: "confirmed",
       });
       if (tx.signature) {
-        console.log("🎯 Transaction confirmed on-chain");
-
-        if (!amount) return;
-        const tx2 = await mintSPI(parseInt(amount) / 100, reference);
-        console.log(tx2);
-        console.log("✅ Tokens minted successfully");
+        logStep("🎯 Transaction confirmed on-chain", { signature: tx.signature });
+        const tx2 = await mintSPI(parseInt(amount!) / 100, reference);
+        logStep("✅ Tokens minted successfully", { tx2 });
+        await updateAsa(new_spi_tokens, new_total_cashback, new_total_spent, new_total_transactions, userPubKey!, asaPdaKey);
         break;
       }
-
-      const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
-        units: 400_000,
-      });
-
-      const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-        microLamports: 1,
-      });
-
-      const keypair = Keypair.fromSecretKey(
-        bs58.decode(process.env.PRIVATE_KEY!)
-      );
-
-      const tx2 = await program.methods
-        .updateUserAsaProgram(
-          new anchor.BN(new_spi_tokens),
-          new anchor.BN(new_total_cashback),
-          new anchor.BN(new_total_spent),
-          new anchor.BN(new_total_transactions),
-          null
-        )
-
-        .accounts({
-          authority: new PublicKey(userPubKey!),
-          customer: new PublicKey(userPubKey!),
-          //@ts-expect-error ergfe
-          userAsa: asaPdaKey,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([keypair])
-        .preInstructions([modifyComputeUnits, addPriorityFee])
-        .rpc();
-      console.info("Transaction completed successfully and updated asa", tx2);
-
+      logStep("trying again");
       return;
-    } catch (err: unknown) {
-      console.error(err);
-      console.log(`⏳ Transaction not found yet, attempt ${attempts + 1}`);
+    } catch (err) {
+      logStep(`⏳ Attempt ${attempts + 1} — Transaction not found yet`, { error: err });
     }
 
     await new Promise((res) => setTimeout(res, pollInterval));
     attempts++;
   }
+
+  logStep("⚠️ pollAndMint — Finished without finding transaction", { attempts });
 };

@@ -18,10 +18,11 @@ import {
   Plus,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Keypair } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import { createReferenceKey } from "@/actions/db";
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
+import { readUserAsaPdaData } from "@/utils/parsePda";
 
 export default function CheckoutDashboard() {
   const router = useRouter();
@@ -58,13 +59,19 @@ export default function CheckoutDashboard() {
   const handleProceedToPayment = async () => {
     const reference = Keypair.generate().publicKey.toString();
     await createReferenceKey(reference);
-    router.push(`/v1/payment/${reference}-${initialTotal}-${discountedTotal}`);
+    router.push(`/v1/payment/${reference}-${Math.floor(initialTotal)}-${Math.floor(discount)}`);
   };
 
   const discountOptions = [0, 25, 50, 75, 100];
 
+  async function handlefindasadata() {
+    const res = await readUserAsaPdaData(new PublicKey("2J9K8kF4BrpAeseRAYZN2HzFaFy5P5pCyFwEQeoY1rAZ"))
+    console.log(res);
+  }
+  
   return (
     <div className="min-h-screen bg-background">
+      <button onClick={handlefindasadata} >click me</button>
       {/*<header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">

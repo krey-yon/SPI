@@ -15,6 +15,7 @@ export async function GET(
 
     // Get PDA and data
     const asaPdaKey = await findUserAsaPda(userPubKey);
+    console.log("asa pda key",asaPdaKey)
     const {
       name,
       spi_tokens,
@@ -64,7 +65,7 @@ export async function GET(
       <text x="160" y="300" class="value">${spi_tokensEsc}</text>
 
       <!-- Total Cashback (Right) -->
-      <text x="340" y="300" class="value">${total_cashbackEsc}</text>
+      <text x="340" y="300" class="value">$${total_cashbackEsc}</text>
 
       <!-- Valid Till -->
       <text x="130" y="380" class="value">${valid_till_unix_timestampEsc}</text>
@@ -73,7 +74,7 @@ export async function GET(
       <text x="250" y="380" class="value">${join_date_unix_timestampEsc}</text>
 
       <!-- Total Spent -->
-      <text x="370" y="380" class="value">${total_spentEsc}</text>
+      <text x="370" y="380" class="value">$${total_spentEsc}</text>
 
       <!-- Total Transactions (Bottom badge) -->
       <text x="250" y="460" class="value">${total_transactionsEsc}</text>
