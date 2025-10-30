@@ -28,8 +28,8 @@ type PaymentStatus =
 
 // Move connection outside component to avoid recreation
 const connection = new Connection(
-  process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 
-  "https://solana-devnet.g.alchemy.com/v2/s-2PSwB8NlPzdjTKg1a1a",
+  process.env.RPC_ENDPOINT || 
+  "https://api.devnet.solana.com",
   "confirmed"
 );
 

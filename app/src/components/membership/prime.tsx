@@ -18,7 +18,7 @@ const API_BASE_URL = "https://spi.kreyon.in/" // Update with your ngrok URL
 type PaymentStatus = "idle" | "pending" | "processing" | "completed" | "expired" | "failed"
 
 const connection = new Connection(
-  "https://solana-devnet.g.alchemy.com/v2/s-2PSwB8NlPzdjTKg1a1a",
+  process.env.RPC_ENDPOINT!,
   "confirmed"
 )
 
