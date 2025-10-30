@@ -23,6 +23,7 @@ const connection = new Connection(RPC_URL, "confirmed");
 const provider = new anchor.AnchorProvider(connection, {} as any, {});
 const program = new anchor.Program(idl as anchor.Idl, provider) as anchor.Program<Spi>;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function logStep(step: string, data?: any) {
   console.log(`\n🪵 [${new Date().toISOString()}] ${step}`);
   if (data) console.dir(data, { depth: null });
