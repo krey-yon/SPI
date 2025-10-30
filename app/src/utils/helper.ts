@@ -16,6 +16,7 @@ if (!privateKey) {
 }
 
 const connection = new Connection(RPC_URL, "confirmed");
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const provider = new anchor.AnchorProvider(connection, {} as any , {});
 const program = new anchor.Program(
   idl as anchor.Idl,
