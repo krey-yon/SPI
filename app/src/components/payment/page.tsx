@@ -138,7 +138,7 @@ export default function PaymentPage() {
 
     const generateQR = async () => {
       try {
-        const url = `solana:https://bce853202c2d.ngrok-free.app/api/create-transaction/${referenceKey}-${Math.floor(parseInt(amountStr))}-${Math.floor(parseInt(percentageStr))}`;
+        const url = `solana:https://spi.kreyon.in/api/create-transaction/${referenceKey}-${Math.floor(parseInt(amountStr))}-${Math.floor(parseInt(percentageStr))}`;
         const qrCode = createQR(url, 350, "white");
 
         // Clear existing QR code first
